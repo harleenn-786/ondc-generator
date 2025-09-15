@@ -112,6 +112,7 @@ jobs:
           EOF
           # Install generator
            npm install
+           npm install -g yo
            # Link locally so yo can see it
            npm link
            cd ..

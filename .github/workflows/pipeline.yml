@@ -38,8 +38,12 @@ jobs:
   create-repo:
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout generator repo
         uses: actions/checkout@v4
+        with:
+          repository: your-username/ondc-generator
+          path: ondc-generator
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -48,9 +52,9 @@ jobs:
 
       - name: Prepare Yeoman Generator
         run: |
-          cd ./ondc-generator
+          cd ondc-generator
 
-          # Create package.json for generator
+          # Create package.json from scratch
           echo '{
             "name": "@ondc/generator-ondc-project",
             "version": "1.0.0",
@@ -65,7 +69,7 @@ jobs:
           # Install dependencies
           npm install
 
-          # Link globally so 'yo @ondc/generator-ondc-project' works
+          # Link globally so yo can find it
           npm link
 
       - name: Create New Repo in Org
@@ -73,7 +77,7 @@ jobs:
           ORG="${{ github.event.inputs.org_name }}"
           REPO="${{ github.event.inputs.repo_name }}"
           DESC="${REPO}: [${{ github.event.inputs.category }}/${{ github.event.inputs.subcategory }}] ${{ github.event.inputs.brief_description }} | status: ${{ github.event.inputs.status }} | domain: ${{ github.event.inputs.domain }}"
-
+          
           CREATE_RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
@@ -83,7 +87,7 @@ jobs:
           if [ "$CREATE_RESP" -eq 201 ]; then
             echo "✅ Repo created: $ORG/$REPO"
           else
-            echo "❌ Failed to create repo, status: $CREATE_RESP"
+            echo "❌ Failed with status $CREATE_RESP"
             exit 1
           fi
 
@@ -92,7 +96,6 @@ jobs:
           ORG="${{ github.event.inputs.org_name }}"
           REPO="${{ github.event.inputs.repo_name }}"
           TOPICS="[\"category-${{ github.event.inputs.category }}\",\"subcategory-${{ github.event.inputs.subcategory }}\",\"type-${{ github.event.inputs.type }}\",\"status-${{ github.event.inputs.status }}\",\"domain-${{ github.event.inputs.domain }}\"]"
-
           curl -X PUT \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
@@ -103,8 +106,6 @@ jobs:
         run: |
           mkdir -p ${{ github.event.inputs.repo_name }}
           cd ${{ github.event.inputs.repo_name }}
-
-          # Run the generator
           yo @ondc/generator-ondc-project --skip-install
 
       - name: Update Placeholders with Repo Name

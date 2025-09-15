@@ -50,19 +50,17 @@ jobs:
         run: |
           cd ./ondc-generator
 
-          # Create package.json exactly for generator
-          cat > package.json <<EOF
-{
-  "name": "@ondc/generator-ondc-project",
-  "version": "1.0.0",
-  "description": "Yeoman generator for Node.js TypeScript projects",
-  "main": "generators/app/index.js",
-  "keywords": ["yeoman-generator"],
-  "dependencies": {
-    "yeoman-generator": "^5.9.0"
-  }
-}
-EOF
+          # Create package.json for generator
+          echo '{
+            "name": "@ondc/generator-ondc-project",
+            "version": "1.0.0",
+            "description": "Yeoman generator for Node.js TypeScript projects",
+            "main": "generators/app/index.js",
+            "keywords": ["yeoman-generator"],
+            "dependencies": {
+              "yeoman-generator": "^5.9.0"
+            }
+          }' > package.json
 
           # Install dependencies
           npm install

@@ -52,12 +52,10 @@ jobs:
           ORG="${{ github.event.inputs.org_name }}"
           REPO="${{ github.event.inputs.repo_name }}"
           DESC="${REPO}: [${{ github.event.inputs.category }}/${{ github.event.inputs.subcategory }}] ${{ github.event.inputs.brief_description }} | status: ${{ github.event.inputs.status }} | domain: ${{ github.event.inputs.domain }}"
-
           REPO_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/$ORG/$REPO)
-
           if [ "$REPO_CHECK" -eq 200 ]; then
             echo "Repository $REPO already exists, skipping creation."
           else
@@ -91,16 +89,18 @@ jobs:
           cd ondc-generator || exit 1
           npm init -y
           npm install yeoman-generator
-          echo '{
-"name": "@ondc/generator-ondc-project",
-"version": "1.0.0",
-"description": "Yeoman generator for Node.js TypeScript projects",
-"main": "generators/app/index.js",
-"keywords": ["yeoman-generator"],
-"dependencies": {
-  "yeoman-generator": "^5.9.0"
+          cat <<'EOT' > package.json
+{
+  "name": "@ondc/generator-ondc-project",
+  "version": "1.0.0",
+  "description": "Yeoman generator for Node.js TypeScript projects",
+  "main": "generators/app/index.js",
+  "keywords": ["yeoman-generator"],
+  "dependencies": {
+    "yeoman-generator": "^5.9.0"
+  }
 }
-}' > package.json
+EOT
           npm install
           npm link
 
@@ -108,7 +108,7 @@ jobs:
         run: |
           mkdir -p ${{ github.event.inputs.repo_name }}
           cd ${{ github.event.inputs.repo_name }} || exit 1
-          yo @ondc/ondc-project --skip-install
+          yo @ondc/generator-ondc-project --skip-install
 
       - name: Update Project Placeholders
         run: |

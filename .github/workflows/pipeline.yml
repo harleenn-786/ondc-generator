@@ -82,40 +82,39 @@ jobs:
             -d "{\"names\": $TOPICS}"
           echo "Topics added: $TOPICS"
 
-      - name: Setup Yeoman Generator & Scaffold Project
-        run: |
+           - name: Setup Yeoman Generator & Scaffold Project
+             run: |
           set -e
-          # create generator folder
           mkdir -p ondc-generator
           cd ondc-generator
 
           # write package.json safely
-          printf '{
-  "name": "@ondc/generator-ondc-project",
-  "version": "1.0.0",
-  "description": "Yeoman generator for Node.js TypeScript projects",
-  "main": "generators/app/index.js",
-  "keywords": ["yeoman-generator"],
-  "dependencies": {
-    "yeoman-generator": "^5.9.0"
-  }
-}\n' > package.json
+          cat <<EOF > package.json
+          {
+          "name": "@ondc/generator-ondc-project",
+          "version": "1.0.0",
+          "description": "Yeoman generator for Node.js TypeScript projects",
+          "main": "generators/app/index.js",
+          "keywords": ["yeoman-generator"],
+          "dependencies": {
+          "yeoman-generator": "^5.9.0"
+            }
+           }
+          EOF
 
-          # install dependencies & link
           npm install
           npm link
 
-          # scaffold project
           mkdir -p ../${{ github.event.inputs.repo_name }}
           cd ../${{ github.event.inputs.repo_name }}
           npx yo @ondc/generator-ondc-project --skip-install
 
-          # replace placeholders
           REPO_NAME="${{ github.event.inputs.repo_name }}"
           sed -i "s/test55-node-backend/$REPO_NAME/g" package.json || true
           sed -i "s/test55-node-backend/$REPO_NAME/g" package-lock.json || true
           sed -i "s/test55-node-backend/$REPO_NAME/g" README.md || true
           sed -i "s/test55-node-backend/$REPO_NAME/g" docker-compose*.yml || true
+
 
       - name: Push Scaffolded Project to Repo
         run: |

@@ -37,58 +37,40 @@ on:
 jobs:
   create-repo:
     runs-on: ubuntu-latest
-    steps:
 
-      - name: Checkout generator repo
+    steps:
+      - name: Checkout self
         uses: actions/checkout@v4
-        with:
-          repository: your-username/ondc-generator
-          path: ondc-generator
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Prepare Yeoman Generator
-        run: |
-          cd ondc-generator
-
-          # Create package.json from scratch
-          echo '{
-            "name": "@ondc/generator-ondc-project",
-            "version": "1.0.0",
-            "description": "Yeoman generator for Node.js TypeScript projects",
-            "main": "generators/app/index.js",
-            "keywords": ["yeoman-generator"],
-            "dependencies": {
-              "yeoman-generator": "^5.9.0"
-            }
-          }' > package.json
-
-          # Install dependencies
-          npm install
-
-          # Link globally so yo can find it
-          npm link
-
-      - name: Create New Repo in Org
+      - name: Create Repository (if not exists)
         run: |
           ORG="${{ github.event.inputs.org_name }}"
           REPO="${{ github.event.inputs.repo_name }}"
           DESC="${REPO}: [${{ github.event.inputs.category }}/${{ github.event.inputs.subcategory }}] ${{ github.event.inputs.brief_description }} | status: ${{ github.event.inputs.status }} | domain: ${{ github.event.inputs.domain }}"
-          
-          CREATE_RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+
+          REPO_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/orgs/$ORG/repos \
-            -d "{\"name\":\"$REPO\",\"private\":false,\"description\":\"$DESC\"}")
+            https://api.github.com/repos/$ORG/$REPO)
 
-          if [ "$CREATE_RESP" -eq 201 ]; then
-            echo "✅ Repo created: $ORG/$REPO"
+          if [ "$REPO_CHECK" -eq 200 ]; then
+            echo "Repository $REPO already exists, skipping creation."
           else
-            echo "❌ Failed with status $CREATE_RESP"
-            exit 1
+            CREATE_RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+              -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/orgs/$ORG/repos \
+              -d "{\"name\":\"$REPO\",\"private\":false,\"description\":\"$DESC\"}")
+            if [ "$CREATE_RESP" -ne 201 ]; then
+              echo "Failed to create repo. HTTP status $CREATE_RESP"
+              exit 1
+            fi
+            echo "Repo $REPO created successfully."
           fi
 
       - name: Add Topics to Repo
@@ -101,14 +83,41 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/$ORG/$REPO/topics \
             -d "{\"names\": $TOPICS}"
+          echo "Topics added: $TOPICS"
 
-      - name: Scaffold Project using Yeoman
+      - name: Setup Yeoman Generator from scratch
+        run: |
+          mkdir -p ondc-generator
+          cd ondc-generator
+
+          # create package.json
+          npm init -y
+
+          # update package.json to proper generator info
+          cat > package.json <<EOL
+{
+  "name": "@ondc/generator-ondc-project",
+  "version": "1.0.0",
+  "description": "Yeoman generator for Node.js TypeScript projects",
+  "main": "generators/app/index.js",
+  "keywords": ["yeoman-generator"],
+  "dependencies": {
+    "yeoman-generator": "^5.9.0"
+  }
+}
+EOL
+
+          # install dependencies and link
+          npm install
+          npm link
+
+      - name: Scaffold Project with Yeoman
         run: |
           mkdir -p ${{ github.event.inputs.repo_name }}
           cd ${{ github.event.inputs.repo_name }}
           yo @ondc/generator-ondc-project --skip-install
 
-      - name: Update Placeholders with Repo Name
+      - name: Update Project Placeholders
         run: |
           cd ${{ github.event.inputs.repo_name }}
           REPO_NAME="${{ github.event.inputs.repo_name }}"
@@ -117,7 +126,7 @@ jobs:
           sed -i "s/test55-node-backend/$REPO_NAME/g" README.md || true
           sed -i "s/test55-node-backend/$REPO_NAME/g" docker-compose*.yml || true
 
-      - name: Push to New Repo
+      - name: Push Scaffolded Project to Repo
         run: |
           cd ${{ github.event.inputs.repo_name }}
           git init

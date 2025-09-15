@@ -41,27 +41,37 @@ jobs:
       - name: Checkout generator repo
         uses: actions/checkout@v4
 
-      - name: Install Node.js & Yeoman
+      - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Setup Yeoman & Link Generator
+      - name: Setup Yeoman Generator
         run: |
+          # Bootstrap generator project if fresh repo
+          if [ ! -f package.json ]; then
+            npm init -y
+            npm install yeoman-generator
+          fi
+          
+          # Install Yeoman globally
           npm install -g yo
-          npm install
-          npm link   # this links your ondc-generator locally as a Yeoman generator
+
+          # Link this repo as Yeoman generator
+          npm link
 
       - name: Create New Repo in Org
         run: |
           ORG="${{ github.event.inputs.org_name }}"
           REPO="${{ github.event.inputs.repo_name }}"
           DESC="${REPO}: [${{ github.event.inputs.category }}/${{ github.event.inputs.subcategory }}] ${{ github.event.inputs.brief_description }} | status: ${{ github.event.inputs.status }} | domain: ${{ github.event.inputs.domain }}"
+          
           CREATE_RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/orgs/$ORG/repos \
             -d "{\"name\":\"$REPO\",\"private\":false,\"description\":\"$DESC\"}")
+          
           if [ "$CREATE_RESP" -eq 201 ]; then
             echo "✅ Repo created: $ORG/$REPO"
           else
@@ -74,6 +84,7 @@ jobs:
           ORG="${{ github.event.inputs.org_name }}"
           REPO="${{ github.event.inputs.repo_name }}"
           TOPICS="[\"category-${{ github.event.inputs.category }}\",\"subcategory-${{ github.event.inputs.subcategory }}\",\"type-${{ github.event.inputs.type }}\",\"status-${{ github.event.inputs.status }}\",\"domain-${{ github.event.inputs.domain }}\"]"
+          
           curl -X PUT \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \

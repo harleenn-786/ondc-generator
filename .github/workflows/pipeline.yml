@@ -49,26 +49,39 @@ jobs:
 
       - name: Create Repository (if not exists)
         run: |
+          set -e
           ORG="${{ github.event.inputs.org_name }}"
           REPO="${{ github.event.inputs.repo_name }}"
           DESC="${REPO}: [${{ github.event.inputs.category }}/${{ github.event.inputs.subcategory }}] ${{ github.event.inputs.brief_description }} | status: ${{ github.event.inputs.status }} | domain: ${{ github.event.inputs.domain }}"
+
           REPO_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/$ORG/$REPO)
+
           if [ "$REPO_CHECK" -eq 200 ]; then
             echo "Repository $REPO already exists, skipping creation."
           else
-            CREATE_RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            # Using here-document for JSON payload
+            curl -s -o /dev/null -w "%{http_code}" -X POST \
               -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
               https://api.github.com/orgs/$ORG/repos \
-              -d "{\"name\":\"$REPO\",\"private\":false,\"description\":\"$DESC\"}")
-            if [ "$CREATE_RESP" -ne 201 ]; then
+              -d @- <<EOF
+          {
+          "name": "$REPO",
+          "private": false,
+          "description": "$DESC"
+          }
+          EOF
+            CREATE_RESP=$?
+            if [ "$CREATE_RESP" -ne 0 ]; then
               echo "Failed to create repo. HTTP status $CREATE_RESP"
               exit 1
             fi
             echo "Repo $REPO created successfully."
+          fi
+
 
       - name: Add Topics to Repo
         run: |

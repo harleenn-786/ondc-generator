@@ -85,24 +85,22 @@ jobs:
 
       - name: Setup Yeoman Generator from scratch
         run: |
-          mkdir -p ondc-generator
-          cd ondc-generator || exit 1
-          npm init -y
-          npm install yeoman-generator
-          cat <<'EOT' > package.json
-{
-  "name": "@ondc/generator-ondc-project",
-  "version": "1.0.0",
-  "description": "Yeoman generator for Node.js TypeScript projects",
-  "main": "generators/app/index.js",
-  "keywords": ["yeoman-generator"],
-  "dependencies": {
-    "yeoman-generator": "^5.9.0"
-  }
-}
-EOT
-          npm install
-          npm link
+         mkdir -p ondc-generator
+         cd ondc-generator || exit 1
+         npm init -y
+         npm install yeoman-generator
+         echo '{
+         "name": "@ondc/generator-ondc-project",
+         "version": "1.0.0",
+         "description": "Yeoman generator for Node.js TypeScript projects",
+         "main": "generators/app/index.js",
+         "keywords": ["yeoman-generator"],
+         "dependencies": {
+         "yeoman-generator": "^5.9.0"
+         }
+         }' > package.json
+         npm install
+         npm link
 
       - name: Scaffold Project with Yeoman
         run: |

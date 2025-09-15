@@ -82,38 +82,35 @@ jobs:
             -d "{\"names\": $TOPICS}"
           echo "Topics added: $TOPICS"
 
-      - name: Setup Yeoman & Scaffold Project in One Step
+      - name: Setup Yeoman Generator & Scaffold Project
         run: |
-          set -e  # exit if any command fails
-
-          # Create generator folder
+          set -e
+          # create generator folder
           mkdir -p ondc-generator
           cd ondc-generator
 
-          # Create package.json properly
-          cat <<'EOF' > package.json
-          {
-          "name": "@ondc/generator-ondc-project",
-          "version": "1.0.0",
-          "description": "Yeoman generator for Node.js TypeScript projects",
-          "main": "generators/app/index.js",
-          "keywords": ["yeoman-generator"],
-          "dependencies": {
-          "yeoman-generator": "^5.9.0"
-           }
-          }
-          EOF
+          # write package.json safely
+          printf '{
+  "name": "@ondc/generator-ondc-project",
+  "version": "1.0.0",
+  "description": "Yeoman generator for Node.js TypeScript projects",
+  "main": "generators/app/index.js",
+  "keywords": ["yeoman-generator"],
+  "dependencies": {
+    "yeoman-generator": "^5.9.0"
+  }
+}\n' > package.json
 
-          # Install dependencies and link generator
+          # install dependencies & link
           npm install
           npm link
 
-          # Scaffold project
+          # scaffold project
           mkdir -p ../${{ github.event.inputs.repo_name }}
           cd ../${{ github.event.inputs.repo_name }}
           npx yo @ondc/generator-ondc-project --skip-install
 
-          # Replace placeholders
+          # replace placeholders
           REPO_NAME="${{ github.event.inputs.repo_name }}"
           sed -i "s/test55-node-backend/$REPO_NAME/g" package.json || true
           sed -i "s/test55-node-backend/$REPO_NAME/g" package-lock.json || true

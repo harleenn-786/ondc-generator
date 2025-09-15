@@ -38,66 +38,61 @@ jobs:
   create-repo:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout generator repo
+      - name: Checkout self (ondc-generator)
         uses: actions/checkout@v4
 
-      - name: Install Node.js
+      # ----------------------------
+      # Install Node.js and Yeoman
+      # ----------------------------
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Setup Yeoman Generator
+      - name: Initialize generator package
         run: |
-          # Bootstrap generator project if fresh repo
-          if [ ! -f package.json ]; then
-            npm init -y
-            npm install yeoman-generator
-          fi
-          
-          # Install Yeoman globally
-          npm install -g yo
-
-          # Link this repo as Yeoman generator
+          mkdir -p generators/app/templates
+          npm init -y
+          npm install yeoman-generator
+          # Update package.json name to match Yeoman convention
+          jq '.name="generator-ondc-generator"' package.json > package.tmp.json && mv package.tmp.json package.json
           npm link
 
-      - name: Create New Repo in Org
+      - name: Create new repo in org
         run: |
           ORG="${{ github.event.inputs.org_name }}"
           REPO="${{ github.event.inputs.repo_name }}"
           DESC="${REPO}: [${{ github.event.inputs.category }}/${{ github.event.inputs.subcategory }}] ${{ github.event.inputs.brief_description }} | status: ${{ github.event.inputs.status }} | domain: ${{ github.event.inputs.domain }}"
-          
           CREATE_RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/orgs/$ORG/repos \
             -d "{\"name\":\"$REPO\",\"private\":false,\"description\":\"$DESC\"}")
-          
           if [ "$CREATE_RESP" -eq 201 ]; then
-            echo "✅ Repo created: $ORG/$REPO"
+            echo " Repo created: $ORG/$REPO"
           else
-            echo "❌ Failed with status $CREATE_RESP"
+            echo " Failed with status $CREATE_RESP"
             exit 1
           fi
 
-      - name: Add Topics to Repo
+      - name: Add topics
         run: |
           ORG="${{ github.event.inputs.org_name }}"
           REPO="${{ github.event.inputs.repo_name }}"
           TOPICS="[\"category-${{ github.event.inputs.category }}\",\"subcategory-${{ github.event.inputs.subcategory }}\",\"type-${{ github.event.inputs.type }}\",\"status-${{ github.event.inputs.status }}\",\"domain-${{ github.event.inputs.domain }}\"]"
-          
           curl -X PUT \
             -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/$ORG/$REPO/topics \
             -d "{\"names\": $TOPICS}"
 
-      - name: Scaffold Project using Generator
+      - name: Scaffold project using Yeoman
         run: |
           mkdir -p ${{ github.event.inputs.repo_name }}
           cd ${{ github.event.inputs.repo_name }}
           yo ondc-generator --skip-install
 
-      - name: Update Placeholders with Repo Name
+      - name: Replace placeholders with repo name
         run: |
           cd ${{ github.event.inputs.repo_name }}
           REPO_NAME="${{ github.event.inputs.repo_name }}"
@@ -106,7 +101,7 @@ jobs:
           sed -i "s/test55-node-backend/$REPO_NAME/g" README.md || true
           sed -i "s/test55-node-backend/$REPO_NAME/g" docker-compose*.yml || true
 
-      - name: Push to New Repo
+      - name: Push to new repo
         run: |
           cd ${{ github.event.inputs.repo_name }}
           git init

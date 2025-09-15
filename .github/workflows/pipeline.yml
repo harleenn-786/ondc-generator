@@ -90,11 +90,12 @@ jobs:
           mkdir -p ondc-generator
           cd ondc-generator || exit 1
 
-          # create package.json
+          # create package.json safely
           npm init -y
 
-          # overwrite package.json with correct generator info
-          echo '{
+          # overwrite package.json using YAML-friendly method
+          cat > package.json <<EOF
+{
   "name": "@ondc/generator-ondc-project",
   "version": "1.0.0",
   "description": "Yeoman generator for Node.js TypeScript projects",
@@ -103,7 +104,8 @@ jobs:
   "dependencies": {
     "yeoman-generator": "^5.9.0"
   }
-}' > package.json
+}
+EOF
 
           # install dependencies and link generator
           npm install

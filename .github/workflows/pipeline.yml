@@ -118,7 +118,7 @@ jobs:
           mkdir -p ${{ github.event.inputs.repo_name }}
           cd ${{ github.event.inputs.repo_name }}
           npm init -y
-          npm install yeoman-generator
+          npm install @ondc/generator-ondc-project
           npx yo @ondc/ondc-project --skip-install
           # Replace placeholders
           REPO_NAME="${{ github.event.inputs.repo_name }}"

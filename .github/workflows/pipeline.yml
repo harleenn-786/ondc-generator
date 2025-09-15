@@ -90,17 +90,17 @@ jobs:
 
           # Create package.json with your JSON content
           cat <<'EOT' > package.json
-{
-  "name": "@ondc/generator-ondc-project",
-  "version": "1.0.0",
-  "description": "Yeoman generator for Node.js TypeScript projects",
-  "main": "generators/app/index.js",
-  "keywords": ["yeoman-generator"],
-  "dependencies": {
-    "yeoman-generator": "^5.9.0"
-  }
-}
-EOT
+           {
+           "name": "@ondc/generator-ondc-project",
+           "version": "1.0.0",
+           "description": "Yeoman generator for Node.js TypeScript projects",
+           "main": "generators/app/index.js",
+           "keywords": ["yeoman-generator"],
+           "dependencies": {
+           "yeoman-generator": "^5.9.0"
+           }
+           }
+          EOT
 
           # Install dependencies and link generator
           npm install

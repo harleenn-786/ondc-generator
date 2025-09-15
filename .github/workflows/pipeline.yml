@@ -54,6 +54,7 @@ jobs:
         run: |
           npm init -y                       # create package.json
           npm install -g yo                 # install Yeoman CLI
+          npm pkg set name="generator-ondc-generator"
           npm install                       # install generator dependencies (if package.json exists)
           npm link                          # link your generator globally
 
